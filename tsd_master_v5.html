@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time, Speed & Distance Master v5</title>
+    <style>
+        /* Sleek Grey/Black Dark Theme */
+        :root {
+            --bg: #09090b;          
+            --surface: #18181b;     
+            --surface-hover: #27272a; 
+            --primary: #06b6d4;     /* Cyan accent for TSD */
+            --primary-hover: #0891b2;
+            --success: #10b981;     
+            --danger: #f43f5e;      
+            --warning: #f59e0b;     
+            --text: #fafafa;        
+            --text-muted: #a1a1aa;  
+            --border: #27272a;      
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 1rem; 
+        }
+        
+        .container { 
+            background: var(--surface); 
+            border-radius: 12px; 
+            padding: 2.5rem; 
+            width: 100%; 
+            max-width: 900px; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); 
+            border: 1px solid var(--border); 
+        }
+        
+        h1 { 
+            text-align: center; 
+            margin-bottom: 0.5rem; 
+            color: var(--text); 
+            font-size: 2.2rem; 
+            letter-spacing: -0.5px;
+        }
+        
+        p.subtitle { 
+            text-align: center; 
+            color: var(--text-muted); 
+            margin-bottom: 2.5rem; 
+            font-size: 1rem; 
+        }
+        
+        #start-screen, #quiz-screen, #result-screen { display: none; }
+        #start-screen.active, #quiz-screen.active, #result-screen.active { display: block; animation: fadeIn 0.3s ease-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        button { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 0.875rem 1.5rem; 
+            border-radius: 8px; 
+            font-size: 1.05rem; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            font-weight: 600; 
+            box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.2);
+        }
+        
+        button:hover:not(:disabled) { 
+            background: var(--primary-hover); 
+            transform: translateY(-1px);
+            box-shadow: 0 6px 8px -1px rgba(6, 182, 212, 0.3);
+        }
+        
+        button:disabled { 
+            background: var(--surface-hover); 
+            color: var(--text-muted);
+            cursor: not-allowed; 
+            box-shadow: none;
+            transform: none;
+        }
+        
+        .start-btn { display: block; width: 100%; padding: 1.25rem; font-size: 1.25rem; margin-top: 1.5rem; letter-spacing: 1px; text-transform: uppercase;}
+
+        .settings { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-bottom: 2.5rem; }
+        .setting-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        .setting-group label { color: var(--text-muted); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        select { 
+            background: var(--bg); 
+            border: 1px solid var(--border); 
+            color: var(--text); 
+            padding: 1rem; 
+            border-radius: 8px; 
+            outline: none; 
+            font-size: 1rem; 
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a1a1aa%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem top 50%;
+            background-size: 0.65rem auto;
+            cursor: pointer;
+        }
+        select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2); }
+
+        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 0.5rem; }
+        .stat-badge { background: var(--bg); padding: 0.75rem 1.25rem; border-radius: 8px; font-weight: 600; border: 1px solid var(--border); font-size: 1.1rem; }
+        .timer-box { color: var(--danger); font-variant-numeric: tabular-nums; }
+        .streak-box { color: var(--warning); }
+        .score-box { color: var(--success); }
+
+        .pace-container { width: 100%; height: 8px; background: var(--bg); border-radius: 4px; margin-bottom: 2rem; overflow: hidden; position: relative; border: 1px solid var(--border); }
+        .pace-bar { height: 100%; width: 100%; background: var(--success); transition: width 1s linear, background-color 0.5s; }
+        .pace-bar.warning { background: var(--warning); }
+        .pace-bar.danger { background: var(--danger); }
+
+        .question-box { font-size: 1.4rem; margin-bottom: 2rem; line-height: 1.6; min-height: 80px; font-weight: 500; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+        
+        .option-btn { 
+            background: var(--surface-hover); 
+            border: 2px solid var(--border); 
+            color: var(--text); 
+            text-align: left; 
+            padding: 1.25rem; 
+            font-size: 1.15rem; 
+            border-radius: 10px;
+            box-shadow: none;
+            font-weight: 500;
+        }
+        
+        .option-btn:hover:not(:disabled) { 
+            background: var(--bg); 
+            border-color: var(--primary); 
+            transform: translateY(-2px);
+        }
+        
+        .option-btn.correct { 
+            background: rgba(16, 185, 129, 0.1); 
+            border-color: var(--success); 
+            color: var(--success);
+        }
+        
+        .option-btn.wrong { 
+            background: rgba(244, 63, 94, 0.1); 
+            border-color: var(--danger); 
+            color: var(--danger);
+        }
+
+        .concept-hint { color: var(--primary); font-size: 0.9rem; margin-bottom: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+
+        #ui-explanation-box { display: none; background: rgba(6, 182, 212, 0.05); border-left: 4px solid var(--primary); padding: 1.25rem; border-radius: 0 8px 8px 0; margin-bottom: 1.5rem; font-size: 1.05rem; line-height: 1.6; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);}
+        
+        .summary-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2.5rem; }
+        .stat-card { background: var(--surface-hover); padding: 1.5rem 1rem; border-radius: 10px; text-align: center; border: 1px solid var(--border); }
+        .stat-card .value { font-size: 2rem; font-weight: 700; color: var(--text); margin-bottom: 0.25rem; }
+        .stat-card .label { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;}
+
+        .review-list { max-height: 500px; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; padding-right: 0.5rem; margin-bottom: 2rem; }
+        .review-list::-webkit-scrollbar { width: 8px; }
+        .review-list::-webkit-scrollbar-track { background: var(--bg); border-radius: 4px; }
+        .review-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .review-list::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        
+        .review-item { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; border-left: 4px solid transparent; }
+        .review-item.correct { border-left-color: var(--success); }
+        .review-item.incorrect { border-left-color: var(--danger); }
+        .review-item.skipped { border-left-color: var(--text-muted); }
+        
+        .review-q { font-weight: 600; margin-bottom: 0.75rem; font-size: 1.15rem; }
+        .review-a { font-size: 1rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+        .review-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; background: var(--surface); padding: 0.75rem; border-radius: 6px; margin-top: 1rem; border: 1px solid var(--border);}
+        .speed-badge { padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 600;}
+        .speed-fast { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .speed-ok { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .speed-slow { background: rgba(244, 63, 94, 0.15); color: var(--danger); }
+        .explanation { margin-top: 0.5rem; font-size: 0.95rem; color: var(--text); border-top: 1px dashed var(--border); padding-top: 1rem; line-height: 1.5;}
+
+        @media (max-width: 600px) {
+            .options-grid, .summary-stats { grid-template-columns: 1fr 1fr; }
+            .container { padding: 1.5rem; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- START SCREEN -->
+        <div id="start-screen" class="active">
+            <h1>Time, Speed & Distance <span style="color: var(--primary)">v5</span></h1>
+            <p class="subtitle">Procedurally generated infinite mathematics based on Kaushik Sir.</p>
+            
+            <div class="settings">
+                <div class="setting-group">
+                    <label>Learning Mode</label>
+                    <select id="quiz-mode">
+                        <option value="train" selected>Training (Instant Explanations & Adaptive)</option>
+                        <option value="exam">Exam Sprint (Strict 30s/Q Auto-Skip)</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>Duration</label>
+                    <select id="quiz-duration">
+                        <option value="180">3 Minutes (Sprint)</option>
+                        <option value="300" selected>5 Minutes (Standard Practice)</option>
+                        <option value="600">10 Minutes (Endurance)</option>
+                        <option value="999999">No Timer (Learn & Explore)</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>Topic Selection</label>
+                    <select id="quiz-concept">
+                        <option value="all" selected>🌟 ALL 8 TOPICS MIXED (Adaptive)</option>
+                        <option value="constant_time">1. Constant Time (Speed Ratio = Distance Ratio)</option>
+                        <option value="constant_dist">2. Constant Distance (Early/Late Concept)</option>
+                        <option value="dist_formula">3. Product/Diff of Speeds Formula (D = S1S2/ΔS * ΔT)</option>
+                        <option value="avg_speed_basic">4. Average Speed (Total Dist / Total Time)</option>
+                        <option value="avg_speed_formula">5. Average Speed (2S1S2 / (S1+S2) for equal dist)</option>
+                        <option value="rel_speed_opp">6. Relative Speed (Opposite Direction)</option>
+                        <option value="rel_speed_same">7. Relative Speed (Same Direction / Chasing)</option>
+                        <option value="meeting_point">8. Speed Ratio after Meeting [S1/S2 = √(T2/T1)]</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="start-btn" id="start-button" onclick="startQuiz()">Initialize Engine</button>
+        </div>
+
+        <!-- QUIZ SCREEN -->
+        <div id="quiz-screen">
+            <div class="header-info">
+                <div class="stat-badge score-box">Score: <span id="ui-score">0</span></div>
+                <div class="stat-badge streak-box">🔥 Streak: <span id="ui-streak">0</span></div>
+                <div class="stat-badge timer-box" id="ui-timer-container"><span id="ui-timer">05:00</span></div>
+            </div>
+            
+            <div class="pace-container">
+                <div class="pace-bar" id="ui-pace-bar"></div>
+            </div>
+
+            <div class="concept-hint" id="ui-concept-hint">Concept: Time, Speed & Distance</div>
+            <div class="question-box" id="ui-question">Loading question...</div>
+            
+            <div class="options-grid" id="ui-options"></div>
+
+            <div id="ui-explanation-box">
+                <strong style="color: var(--primary);">Concept Breakdown:</strong><br>
+                <span id="ui-exp-text"></span>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 1rem; gap: 1rem;">
+                <button id="skip-btn" onclick="skipQuestion()" style="background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); box-shadow: none;">Skip Question</button>
+                <button id="next-btn" onclick="nextQuestion()" disabled>Next Question ➔</button>
+            </div>
+        </div>
+
+        <!-- RESULT SCREEN -->
+        <div id="result-screen">
+            <h1>Session Complete</h1>
+            
+            <div class="summary-stats">
+                <div class="stat-card"><div class="value" id="res-score">0</div><div class="label">Correct</div></div>
+                <div class="stat-card"><div class="value" id="res-accuracy">0%</div><div class="label">Accuracy</div></div>
+                <div class="stat-card"><div class="value" id="res-speed">0s</div><div class="label">Avg Time</div></div>
+                <div class="stat-card"><div class="value" id="res-streak" style="color: var(--warning);">0</div><div class="label">Best Streak</div></div>
+            </div>
+
+            <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; color: var(--text-muted);">Weakest Concept: <span id="res-weakest" style="color: var(--danger);">None</span></h3>
+            
+            <div class="review-list" id="review-container"></div>
+
+            <button class="start-btn" onclick="resetApp()">Return to Dashboard</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CORE MATH HELPERS ---
+        function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+        function gcd(a, b) { if (b === 0) return a; return gcd(b, a % b); }
+
+        function shuffle(array) {
+            var cur = array.length, rndI;
+            while (cur > 0) {
+                rndI = Math.floor(Math.random() * cur); cur--;
+                var temp = array[cur]; array[cur] = array[rndI]; array[rndI] = temp;
+            }
+            return array;
+        }
+
+        function getUniqueOptions(opts) {
+            var unique = [];
+            for (var i = 0; i < opts.length; i++) {
+                if (unique.indexOf(opts[i]) === -1) unique.push(opts[i]);
+            }
+            return unique;
+        }
+
+        // --- 8 DYNAMIC GENERATORS based on Kaushik Sir's TSD video ---
+        var generators = {
+            
+            // 1. Constant Time (Speed Ratio = Distance Ratio)
+            // Two bodies start at same time and meet.
+            'constant_time': function() {
+                var s1 = rnd(40, 80);
+                var s2 = rnd(20, 60);
+                if (s1 === s2) s1 += 10;
+                var faster = Math.max(s1, s2);
+                var slower = Math.min(s1, s2);
+                
+                // Ratio of speeds
+                var g = gcd(faster, slower);
+                var rFast = faster/g;
+                var rSlow = slower/g;
+                
+                var diffParts = rFast - rSlow;
+                var multiplier = rnd(2, 6); // Part multiplier
+                
+                var diffKm = diffParts * multiplier; // Given in question
+                var totalParts = rFast + rSlow;
+                var ans = totalParts * multiplier;
+
+                var q = "A and B start walking towards each other simultaneously from points X and Y. A's speed is " + faster + " km/h and B's speed is " + slower + " km/h. When they meet, it is found that A has traveled " + diffKm + " km more than B. Find the distance between X and Y.";
+                var expText = "Time is Constant: When two bodies start at the same time and meet, the time traveled by both is equal. Therefore, Distance ratio = Speed ratio. Speed ratio = " + faster + ":" + slower + " = " + rFast + ":" + rSlow + ". Difference in parts = " + diffParts + " parts. " + diffParts + " parts = " + diffKm + " km -> 1 part = " + multiplier + " km. Total distance = " + totalParts + " parts = " + ans + " km.";
+
+                var opts = [ans, ans + totalParts, Math.abs(ans - totalParts), ans * 2];
+                opts = getUniqueOptions(opts);
+                while(opts.length < 4) { opts.push(opts[0] + rnd(1,5)*multiplier); opts = getUniqueOptions(opts); }
+                
+                return { id: 'constant_time', type: 'Constant Time (D ∝ S)', q: q, ans: ans, options: shuffle(opts), exp: expText };
+            },
+
+            // 2. Constant Distance (Early/Late Concept)
+            // Speed reduced by 1/X -> Time increases.
+            'constant_dist': function() {
+                var parts = rnd(4, 9); // e.g. 5
+                var less = 1; 
+                var newParts = parts - less; // e.g. 4
+                
+                var tRatio1 = newParts; // old time parts
+                var tRatio2 = parts; // new time parts
+                var diffTimeParts = tRatio2 - tRatio1; // always 1 in this setup
+                
+                var diffTimeActual = rnd(10, 30); // minutes late
+                var oldTimeMinutes = tRatio1 * diffTimeActual;
+                
+                var ans = oldTimeMinutes; // Find usual time
+                var q = "By walking at " + newParts + "/" + parts + " of his usual speed, a man reaches his office " + diffTimeActual + " minutes late. Find his usual time.";
+                var expText = "Distance is Constant: Speed ratio = " + parts + ":" + newParts + ". Therefore, Time ratio is inversely proportional = " + newParts + ":" + parts + ". Difference = " + diffTimeParts + " part. 1 part = " + diffTimeActual + " mins. Usual time = " + tRatio1 + " parts = " + ans + " minutes.";
+
+                var opts = [ans, ans + diffTimeActual, ans - diffTimeActual, tRatio2 * diffTimeActual]; // Trap is new time
+                opts = getUniqueOptions(opts);
+                while(opts.length < 4) { opts.push(opts[0] + rnd(1,5)*diffTimeActual); opts = getUniqueOptions(opts); }
+
+                return { id: 'constant_dist', type: 'Constant Distance (Early/Late)', q: q, ans: ans, options: shuffle(opts), exp: expText };
+            },
+
+            // 3. Distance Formula: D = (S1 * S2) / (S1 ~ S2) * Time Diff
+            'dist_formula': function() {
+                var s1 = rnd(30, 50);
+                var s2 = rnd(15, 25);
+                var diffSpeed = s1 - s2;
+                
+                // Keep time diff such that distance is an integer
+                // let distance be a multiple of s1, s2, diffSpeed
+                var dist = s1 * s2 * rnd(1, 3);
+                // Time diff in hours
+                var t1 = dist / s1;
+                var t2 = dist / s2;
+                var tDiffHours = t2 - t1;
+                var tDiffMins = Math.round(tDiffHours * 60);
+
+                var ans = dist;
+                var q = "If a man travels at " + s1 + " km/h, he reaches early. If he travels at " + s2 + " km/h, he is late. The total difference in time between the two scenarios is " + tDiffMins + " minutes. Find the distance.";
+                var expText = "Formula: Distance = [ (S1 × S2) / (S1 ~ S2) ] × (Time Difference in hours). D = [ (" + s1 + " × " + s2 + ") / " + diffSpeed + " ] × (" + tDiffMins + "/60) = " + ans + " km.";
+
+                var opts = [ans, ans + s1, ans - s2, ans * 2];
+                for(var i=0; i<opts.length; i++) { if(opts[i] <= 0) opts[i] += 50; }
+                opts = getUniqueOptions(opts);
+                while(opts.length < 4) { opts.push(opts[0] + rnd(1,5)*10); opts = getUniqueOptions(opts); }
+
+                return { id: 'dist_formula', type: 'Distance Formula', q: q, ans: ans, options: shuffle(opts), exp: expText };
+            },
+
+            // 4. Average Speed Basic (Total Dist / Total Time)
+            'avg_speed_basic': function() {
+                // To keep numbers clean, pick times and speeds
+                var t1 = rnd(2, 5);
+                var s1 = rnd(30, 60);
+                var d1 = t1 * s1;
+                
+                var t2 = rnd(3, 6);
+                var s2 = rnd(40, 70);
+                var d2 = t2 * s2;
+                
+                var t3 = rnd(1, 4);
+                var s3 = rnd(20, 50);
+                var d3 = t3 * s3;
+                
+                var totalD = d1 + d2 + d3;
+                var totalT = t1 + t2 + t3;
+                
+                var avgSpeed = totalD / totalT;
+                var ans = Number.isInteger(avgSpeed) ? avgSpeed : avgSpeed.toFixed(1);
+
+                var q = "A man travels " + d1 + " km at " + s1 + " km/h, then " + d2 + " km at " + s2 + " km/h, and finally " + d3 + " km at " + s3 + " km/h. Find his average speed for the whole journey.";
+                var expText = "Average Speed = Total Distance / Total Time. Total D = " + d1 + " + " + d2 + " + " + d3 + " = " + totalD + " km. Times are " + d1 + "/" + s1 + "=" + t1 + "h, " + d2 + "/" + s2 + "=" + t2 + "h, " + d3 + "/" + s3 + "=" + t3 + "h. Total T = " + totalT + "h. Avg Speed = " + totalD + " / " + totalT + " = " + ans + " km/h.";
+
+                var opts = [ans, ((s1+s2+s3)/3).toFixed(1), (parseFloat(ans)+5).toFixed(1), (parseFloat(ans)-5).toFixed(1)];
+                opts = getUniqueOptions(opts);
+                while(opts.length < 4) { opts.push((parseFloat(ans) + rnd(2,8)).toFixed(1)); opts = getUniqueOptions(opts); }
+
+                return { id: 'avg_speed_basic', type: 'Average Speed (Basic)', q: q, ans: ans.toString(), options: shuffle(opts.map(String)), exp: expText };
+            },
+
+            // 5. Average Speed (Equal Distance) - 2S1S2 / (S1+S2)
+            'avg_speed_formula': function() {
+                // To get integer results for 2ab/(a+b)
+                // Let a+b divide 2ab
+                var speeds = [[20, 30, 24], [30, 60, 40], [40, 60, 48], [10, 40, 16], [12, 24, 16], [15, 30, 20]];
+                var set = speeds[rnd(0, speeds.length-1)];
+                var s1 = set[0], s2 = set[1], ans = set[2];
+
+                var q = "A boy walks from his home to school at " + s1 + " km/h and returns back along the same route at " + s2 + " km/h. Find his average speed for the entire journey.";
+                var expText = "When distances are equal (going and coming back), Average Speed = (2 × S1 × S2) / (S1 + S2). Avg Speed = (2 × " + s1 + " × " + s2 + ") / (" + s1 + " + " + s2 + ") = " + ans + " km/h.";
+
+                var opts = [ans, (s1+s2)/2, ans + 4, ans - 4]; // Trap is simple average
+                opts = getUniqueOptions(opts);
+                while(opts.length < 4) { opts.push(opts[0] + rnd(1,5)*2); opts = getUniqueOptions(opts); }
+
+                return { id: 'avg_speed_formula', type: 'Avg Speed (Equal Dist)', q: q, ans: ans, options: shuffle(opts), exp: expText };
+            },
+
+            // 6. Relative Speed (Opposite Direction)
+            'rel_speed_opp': function() {
+                var s1 = rnd(40, 60);
+                var s2 = rnd(30, 50);
+                var relSpeed = s1 + s2;
+                var hours = rnd(2, 5);
+                var dist = relSpeed * hours;
+                
+                var ans = hours;
+                var q = "Two trains start at the same time from two stations " + dist + " km apart and proceed towards each other. Their speeds are " + s1 + " km/h and " + s2 + " km/h respectively. After how many hours will they meet?";
+                var expText = "Opposite Direction: Relative Speed = S1 + S2 = " + s1 + " + " + s2 + " = " + relSpeed + " km/h. Time = Distance / Relative Speed = " + dist + " / " + relSpeed + " = " + ans + " hours.";
+
+                var opts = [ans, ans + 1, ans + 2, (dist / (s1-s2)).toFixed(1)]; // Trap is same direction
+                for (let i=0; i<opts.length; i++){ if(opts[i] <= 0 || !isFinite(opts[i])) opts[i] = ans+3; }
+                opts = getUniqueOptions(opts);
+                while(opts.length < 4) { opts.push(opts[0] + rnd(1,4)); opts = getUniqueOptions(opts); }
+
+                return { id: 'rel_speed_opp', type: 'Relative Speed (Opposite)', q: q, ans: ans.toString(), options: shuffle(opts.map(String)), exp: expText };
+            },
+
+            // 7. Relative Speed (Same Direction / Chasing)
+            'rel_speed_same': function() {
+                var sThief = rnd(30, 60);
+                var sPolice = sThief + rnd(10, 20); // Police must be faster
+                var relSpeed = sPolice - sThief;
+                
+                // distance in km
+                var distGap = relSpeed * (rnd(1, 5) * 0.5); // 0.5, 1, 1.5, 2 hours
+                var timeHours = distGap / relSpeed;
+                var distRunByThief = sThief * timeHours;
+                var ans = distRunByThief;
+
+                var q = "A policeman notices a thief at a distance of " + distGap + " km. The thief starts running and the policeman chases him. If the thief runs at " + sThief + " km/h and the policeman runs at " + sPolice + " km/h, what distance will the thief have run before being caught?";
+                var expText = "Same Direction: Relative Speed = S_Police - S_Thief = " + sPolice + " - " + sThief + " = " + relSpeed + " km/h. Time to catch = Gap / Rel Speed = " + distGap + " / " + relSpeed + " = " + timeHours + " hours. In this time, the thief runs = " + sThief + " × " + timeHours + " = " + ans + " km.";
+
+                var opts = [ans, ans + distGap, ans - 10, ans + 10]; // Trap is police distance
+                for(var i=0; i<opts.length; i++) { if(opts[i] <= 0) opts[i] += 20; }
+                opts = getUniqueOptions(opts);
+                while(opts.length < 4) { opts.push(opts[0] + rnd(1,5)*10); opts = getUniqueOptions(opts); }
+
+                return { id: 'rel_speed_same', type: 'Relative Speed (Same Dir)', q: q, ans: ans, options: shuffle(opts), exp: expText };
+            },
+
+            // 8. Speed Ratio after Meeting [S1/S2 = √(T2/T1)]
+            'meeting_point': function() {
+                // Ensure perfect squares
+                var squares = [1, 4, 9, 16, 25, 36];
+                var t1 = squares[rnd(1, squares.length-2)]; // avoid 1, 36
+                var t2 = squares[rnd(0, squares.length-1)];
+                while(t1 === t2) t2 = squares[rnd(0, squares.length-1)];
+                
+                var r1 = Math.sqrt(t2);
+                var r2 = Math.sqrt(t1);
+                
+                var baseSpeed = rnd(10, 20);
+                var s1 = r1 * baseSpeed;
+                var s2 = r2 * baseSpeed; // The unknown to find
+                
+                var ans = s2;
+                var q = "Two trains P and Q start simultaneously from stations A and B towards each other. After crossing each other, they take " + t1 + " hours and " + t2 + " hours respectively to reach their destinations B and A. If the speed of train P is " + s1 + " km/h, find the speed of train Q.";
+                var expText = "Meeting Point Concept: S1/S2 = √(T2/T1). Here, S1/S2 = √(" + t2 + "/" + t1 + ") = " + r1 + "/" + r2 + ". We know S1 = " + s1 + ". So, " + s1 + "/S2 = " + r1 + "/" + r2 + ". S2 = (" + s1 + " × " + r2 + ") / " + r1 + " = " + ans + " km/h.";
+
+                var opts = [ans, s1 * (r1/r2), ans + 10, ans - 10]; // Trap is wrong ratio direction
+                for(var i=0; i<opts.length; i++) { if(opts[i] <= 0 || !Number.isInteger(opts[i])) opts[i] = ans + 15; }
+                opts = getUniqueOptions(opts);
+                while(opts.length < 4) { opts.push(opts[0] + rnd(1,5)*5); opts = getUniqueOptions(opts); }
+
+                return { id: 'meeting_point', type: 'Speed Ratio after Meeting', q: q, ans: ans, options: shuffle(opts), exp: expText };
+            }
+        };
+
+        var state = {
+            mode: 'train', timeRemaining: 300, timerId: null,
+            questionsAttempted: 0, correctAnswers: 0, streak: 0, maxStreak: 0,
+            history: [], currentQ: null, qStartTime: 0, paceTime: 30, focus: 'all',
+            weights: {}, errorCounts: {}, isTransitioning: false
+        };
+
+        function startQuiz() {
+            try {
+                state.mode = document.getElementById('quiz-mode').value;
+                var dur = parseInt(document.getElementById('quiz-duration').value);
+                state.timeRemaining = dur;
+                state.paceTime = 30; // Strict 30s
+                state.isTransitioning = false;
+                
+                document.getElementById('ui-timer-container').style.display = (dur === 999999) ? 'none' : 'block';
+                
+                state.focus = document.getElementById('quiz-concept').value;
+                state.questionsAttempted = 0; state.correctAnswers = 0; state.streak = 0; state.maxStreak = 0;
+                state.history = [];
+                
+                state.weights = {}; state.errorCounts = {};
+                var genKeys = Object.keys(generators);
+                for(var i=0; i<genKeys.length; i++) {
+                    var k = genKeys[i];
+                    if (state.focus === 'all' || state.focus === k) {
+                        state.weights[k] = 1; 
+                        state.errorCounts[k] = 0;
+                    }
+                }
+                
+                document.getElementById('start-screen').classList.remove('active');
+                document.getElementById('quiz-screen').classList.add('active');
+                
+                if(dur !== 999999) {
+                    state.timerId = setInterval(tick, 1000);
+                }
+                generateNextQuestion();
+            } catch (e) {
+                alert("Error starting test: " + e.message);
+                console.error(e);
+            }
+        }
+
+        function tick() {
+            state.timeRemaining--;
+            updateUITimer();
+            
+            var elapsed = (performance.now() - state.qStartTime) / 1000;
+            var pacePct = Math.max(0, 100 - (elapsed / state.paceTime) * 100);
+            var bar = document.getElementById('ui-pace-bar');
+            bar.style.width = pacePct + '%';
+            
+            if (pacePct < 30) { bar.className = 'pace-bar danger'; }
+            else if (pacePct < 60) { bar.className = 'pace-bar warning'; }
+            else { bar.className = 'pace-bar'; }
+
+            // STRICT 30s TIMEOUT IN EXAM MODE
+            if (state.mode === 'exam' && pacePct <= 0 && !state.isTransitioning) {
+                timeOutQuestion();
+            }
+
+            if (state.timeRemaining <= 0) endQuiz();
+        }
+
+        function updateUITimer() {
+            var m = Math.floor(state.timeRemaining / 60);
+            var s = state.timeRemaining % 60;
+            var minStr = m < 10 ? '0' + m : m;
+            var secStr = s < 10 ? '0' + s : s;
+            document.getElementById('ui-timer').innerText = minStr + ":" + secStr;
+            document.getElementById('ui-streak').innerText = state.streak;
+            document.getElementById('ui-score').innerText = state.correctAnswers;
+        }
+
+        function getWeightedRandomConcept() {
+            var genKeys = Object.keys(state.weights);
+            var totalWeight = 0;
+            for(var i=0; i<genKeys.length; i++) totalWeight += state.weights[genKeys[i]];
+            
+            var random = Math.random() * totalWeight;
+            for(var j=0; j<genKeys.length; j++) {
+                var concept = genKeys[j];
+                random -= state.weights[concept];
+                if (random <= 0) return concept;
+            }
+            return genKeys[0];
+        }
+
+        function generateNextQuestion() {
+            state.isTransitioning = false;
+            document.getElementById('ui-explanation-box').style.display = 'none';
+            document.getElementById('skip-btn').disabled = false;
+            document.getElementById('next-btn').disabled = true;
+            document.getElementById('ui-pace-bar').style.width = '100%';
+            
+            if(document.getElementById('quiz-duration').value == 999999) {
+                requestAnimationFrame(updatePaceBarLoop);
+            }
+
+            var concept = getWeightedRandomConcept();
+            state.currentQ = generators[concept]();
+            state.qStartTime = performance.now();
+
+            document.getElementById('ui-concept-hint').innerText = "Concept: " + state.currentQ.type;
+            document.getElementById('ui-question').innerText = state.currentQ.q;
+            
+            var optsContainer = document.getElementById('ui-options');
+            optsContainer.innerHTML = '';
+            
+            for(var i=0; i<state.currentQ.options.length; i++) {
+                (function(opt) {
+                    var btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.innerText = opt;
+                    btn.onclick = function() { selectOption(opt, btn); };
+                    optsContainer.appendChild(btn);
+                })(state.currentQ.options[i]);
+            }
+        }
+        
+        function updatePaceBarLoop() {
+            if(document.getElementById('quiz-screen').classList.contains('active') && document.getElementById('quiz-duration').value == 999999) {
+                var elapsed = (performance.now() - state.qStartTime) / 1000;
+                var pacePct = Math.max(0, 100 - (elapsed / state.paceTime) * 100);
+                var bar = document.getElementById('ui-pace-bar');
+                bar.style.width = pacePct + '%';
+                if (pacePct < 30) bar.className = 'pace-bar danger'; 
+                else if (pacePct < 60) bar.className = 'pace-bar warning'; 
+                else bar.className = 'pace-bar';
+                requestAnimationFrame(updatePaceBarLoop);
+            }
+        }
+
+        function selectOption(selectedOpt, btnElement) {
+            state.isTransitioning = true;
+            var timeTaken = Math.round(performance.now() - state.qStartTime);
+            var isCorrect = (selectedOpt == state.currentQ.ans);
+            
+            var buttons = document.querySelectorAll('.option-btn');
+            for(var i=0; i<buttons.length; i++) {
+                var b = buttons[i];
+                b.disabled = true;
+                if (b.innerText == state.currentQ.ans) b.classList.add('correct');
+                else if (b === btnElement && !isCorrect) b.classList.add('wrong');
+            }
+
+            state.questionsAttempted++;
+            document.getElementById('skip-btn').disabled = true;
+            document.getElementById('next-btn').disabled = false;
+
+            if (isCorrect) {
+                state.correctAnswers++;
+                state.streak++;
+                state.maxStreak = Math.max(state.maxStreak, state.streak);
+                state.weights[state.currentQ.id] = Math.max(0.5, state.weights[state.currentQ.id] - 0.2);
+            } else {
+                state.streak = 0;
+                state.weights[state.currentQ.id] += 1.5;
+                state.errorCounts[state.currentQ.id]++;
+                
+                if (state.mode === 'train') {
+                    document.getElementById('ui-explanation-box').style.display = 'block';
+                    document.getElementById('ui-exp-text').innerText = state.currentQ.exp;
+                }
+            }
+            
+            updateUITimer();
+            
+            var histItem = {
+                id: state.currentQ.id, type: state.currentQ.type, q: state.currentQ.q,
+                ans: state.currentQ.ans, exp: state.currentQ.exp,
+                userAns: selectedOpt, timeTakenMs: timeTaken, isCorrect: isCorrect, skipped: false
+            };
+            state.history.push(histItem);
+            
+            if (state.mode === 'exam') { setTimeout(generateNextQuestion, 800); }
+        }
+
+        function skipQuestion() {
+            state.isTransitioning = true;
+            var timeTaken = Math.round(performance.now() - state.qStartTime);
+            state.questionsAttempted++; 
+            state.streak = 0;
+            state.weights[state.currentQ.id] += 1.0; 
+            state.errorCounts[state.currentQ.id]++;
+            
+            var histItem = {
+                id: state.currentQ.id, type: state.currentQ.type, q: state.currentQ.q,
+                ans: state.currentQ.ans, exp: state.currentQ.exp,
+                userAns: "Skipped ⏭", timeTakenMs: timeTaken, isCorrect: false, skipped: true
+            };
+            state.history.push(histItem);
+            
+            updateUITimer();
+            generateNextQuestion();
+        }
+
+        function timeOutQuestion() {
+            state.isTransitioning = true;
+            var timeTaken = Math.round(performance.now() - state.qStartTime);
+            state.questionsAttempted++; 
+            state.streak = 0;
+            state.weights[state.currentQ.id] += 1.0; 
+            state.errorCounts[state.currentQ.id]++;
+            
+            var histItem = {
+                id: state.currentQ.id, type: state.currentQ.type, q: state.currentQ.q,
+                ans: state.currentQ.ans, exp: state.currentQ.exp,
+                userAns: "Time Out ⏱️", timeTakenMs: timeTaken, isCorrect: false, skipped: true
+            };
+            state.history.push(histItem);
+            
+            updateUITimer();
+            generateNextQuestion();
+        }
+
+        function nextQuestion() { generateNextQuestion(); }
+
+        function endQuiz() {
+            clearInterval(state.timerId);
+            document.getElementById('quiz-screen').classList.remove('active');
+            document.getElementById('result-screen').classList.add('active');
+            renderResults();
+        }
+
+        function renderResults() {
+            document.getElementById('res-score').innerText = state.correctAnswers + "/" + state.questionsAttempted;
+            var acc = state.questionsAttempted > 0 ? Math.round((state.correctAnswers / state.questionsAttempted) * 100) : 0;
+            document.getElementById('res-accuracy').innerText = acc + "%";
+            document.getElementById('res-streak').innerText = state.maxStreak;
+            
+            var totalMs = 0;
+            for(var i=0; i<state.history.length; i++) totalMs += state.history[i].timeTakenMs;
+            var avgS = state.questionsAttempted > 0 ? (totalMs / state.questionsAttempted / 1000).toFixed(1) : 0;
+            document.getElementById('res-speed').innerText = avgS + "s";
+
+            var weakest = "None", maxErr = 0;
+            var eKeys = Object.keys(state.errorCounts);
+            for (var j=0; j<eKeys.length; j++) {
+                var key = eKeys[j];
+                if (state.errorCounts[key] > maxErr) {
+                    maxErr = state.errorCounts[key];
+                    weakest = key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ');
+                }
+            }
+            document.getElementById('res-weakest').innerText = weakest + (maxErr > 0 ? " (" + maxErr + " errors)" : " - Perfect!");
+
+            var list = document.getElementById('review-container');
+            list.innerHTML = '';
+            
+            if (state.history.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No questions attempted.</p>';
+                return;
+            }
+
+            for(var k=0; k<state.history.length; k++) {
+                var item = state.history[k];
+                var div = document.createElement('div');
+                div.className = "review-item " + (item.skipped ? 'skipped' : (item.isCorrect ? 'correct' : 'incorrect'));
+                
+                var s = item.timeTakenMs / 1000;
+                var speedClass = 'speed-ok', speedText = 'Avg Pace';
+                if (s < 15) { speedClass = 'speed-fast'; speedText = 'Lightning Fast ⚡'; }
+                else if (s > 30) { speedClass = 'speed-slow'; speedText = 'Needs Practice 🐢'; }
+
+                var ansHtml = "Your Answer: <span style='color: " + (item.skipped ? 'var(--text-muted)' : (item.isCorrect ? 'var(--success)' : 'var(--danger)')) + "'>" + item.userAns + "</span>";
+                if (!item.isCorrect || item.skipped) {
+                    ansHtml += " | Correct Answer: <span style='color: var(--success)'>" + item.ans + "</span>";
+                }
+
+                div.innerHTML = "<div class='review-q'>Q" + (k + 1) + ": " + item.q + "</div>" +
+                                "<div class='review-a'>" + ansHtml + "</div>" +
+                                "<div class='explanation'>" + item.exp + "</div>" +
+                                "<div class='review-meta'>" +
+                                "<span>Concept: " + item.type + "</span>" +
+                                "<span><span class='speed-badge " + speedClass + "'>" + speedText + "</span> Time: " + s.toFixed(1) + "s</span>" +
+                                "</div>";
+                list.appendChild(div);
+            }
+        }
+
+        function resetApp() {
+            if(state.timerId) clearInterval(state.timerId);
+            document.getElementById('result-screen').classList.remove('active');
+            document.getElementById('quiz-screen').classList.remove('active');
+            document.getElementById('start-screen').classList.add('active');
+        }
+    </script>
+</body>
+</html>
